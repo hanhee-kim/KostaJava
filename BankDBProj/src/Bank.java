@@ -1,19 +1,6 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.sql.Connection;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 import java.util.Scanner;
-import java.util.StringTokenizer;
 
 import acc.Account;
 import acc.SpecialAccount;
@@ -60,7 +47,7 @@ public class Bank {
 		System.out.print("계좌번호:");
 		String id = sc.nextLine();
 		Account acc = AccountDAO.selectAccount(conn, id);
-		if(acc==null) {
+		if(acc != null) {
 			AccountDAO.close(conn);
 			throw new BankException("계좌오류", BankError.EXISTID);
 		}
@@ -68,7 +55,7 @@ public class Bank {
 		String name = sc.nextLine();
 		System.out.print("입금액:");
 		int money = Integer.parseInt(sc.nextLine());
-		//AccountDAO.insertAccount(new Account(id,name,money));
+		AccountDAO.insertAccount(conn,new Account(id,name,money));
 		AccountDAO.close(conn);
 	}
 	
@@ -78,7 +65,8 @@ public class Bank {
 		System.out.print("계좌번호:");
 		String id = sc.nextLine();
 		Account acc = AccountDAO.selectAccount(conn, id);
-		if(acc==null) {
+//		SpecialAccount acc = (SpecialAccount) AccountDAO.selectAccount(conn, id);
+		if(acc != null) {
 			AccountDAO.close(conn);
 			throw new BankException("계좌오류", BankError.EXISTID);
 		}
@@ -89,34 +77,69 @@ public class Bank {
 		System.out.print("등급(VIP-V,Gold-G,Silver-S,Normal-N):");
 		String grade = sc.nextLine();
 		//추가
-		//AccountDAO.insertAccount(new SpecialAccount(id,name,money,grade));
+		AccountDAO.insertAccount(conn,new SpecialAccount(id,name,money,grade));
 		AccountDAO.close(conn);
 	}
 	
 	void deposit() throws BankException {
+		Connection conn = AccountDAO.getConnection();
 		System.out.println("[입금]");
 		System.out.print("계좌번호:");
 		String id = sc.nextLine();
+		
+		Account acc = AccountDAO.selectAccount(conn, id);
+		if(acc == null) {
+			AccountDAO.close(conn);
+			throw new BankException("계좌오류",BankError.NOID);
+		}
 		System.out.print("입금액:");
 		int money = Integer.parseInt(sc.nextLine());
+		acc.deposit(money);
+		AccountDAO.updateAccount(conn, acc);
+		
+		AccountDAO.close(conn);
 	}
 	
 	void withdraw() throws BankException {
+		Connection conn = AccountDAO.getConnection();
 		System.out.println("[출금]");
 		System.out.print("계좌번호:");
 		String id = sc.nextLine();
+		Account acc = AccountDAO.selectAccount(conn, id);
+		if(acc == null) {
+			AccountDAO.close(conn);
+			throw new BankException("계좌오류", BankError.ACCMENU.NOID);
+		}
 		System.out.print("출금액:");
 		int money = Integer.parseInt(sc.nextLine());
+		acc.withdraw(money);
+		AccountDAO.updateAccount(conn, acc);
+		
+		AccountDAO.close(conn);
 	}
 	
 	void accountInfo() throws BankException {
+		Connection conn = AccountDAO.getConnection();
 		System.out.println("[계좌조회]");
 		System.out.print("계좌번호:");
 		String id = sc.nextLine();
+		Account acc = AccountDAO.selectAccount(conn, id);
+		if(acc == null) {
+			AccountDAO.close(conn);
+			throw new BankException("계좌오류", BankError.NOID);
+		}
+		System.out.println(acc);
+		AccountDAO.close(conn);
 	}
 	
 	void allAccountInfo() {
+		Connection conn = AccountDAO.getConnection();
 		System.out.println("[전체 계좌 조회]");
+		List<Account> accs = AccountDAO.selectAccountList(conn);
+		for(Account acc : accs) {
+			System.out.println(acc);
+		}
+		AccountDAO.close(conn);
 	}
 	
 	public static void main(String[] args) {
